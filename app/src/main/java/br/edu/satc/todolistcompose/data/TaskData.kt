@@ -1,4 +1,4 @@
-package br.edu.satc.todolistcompose
+package br.edu.satc.todolistcompose.data
 
 data class TaskData (
     val title: String,
