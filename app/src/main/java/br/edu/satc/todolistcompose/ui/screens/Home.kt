@@ -29,6 +29,7 @@ import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,21 +38,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import br.edu.satc.todolistcompose.data.TaskData
 import br.edu.satc.todolistcompose.ui.components.TaskCard
+import br.edu.satc.todolistcompose.viewmodel.TaskViewModel
 import kotlinx.coroutines.launch
 
 
-@Preview(showBackground = true)
+
 @Composable
-fun HomeScreen() {
+fun HomeScreen(viewModel: TaskViewModel) {
 
     // states by remember
     // Guardam valores importantes de controle em nossa home
     var showBottomSheet by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val tasks by viewModel.tasks.collectAsState()
 
     /**
      * O componente Scaffold facilita a construção de telas seguindo as guidelines
@@ -75,7 +77,7 @@ fun HomeScreen() {
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
-                title = { Text(text = "ToDoList UniSATC") },
+                title = { Text(text = "ToDo List") },
                 actions =
                 {
                     /**
@@ -119,19 +121,16 @@ fun HomeScreen() {
          * O que aparece no "meio".
          * Para ficar mais organizado, montei o conteúdo em functions separadas.
          * */
-        HomeContent(innerPadding)
-        NewTask(showBottomSheet = showBottomSheet) { showBottomSheet = false }
-
+        HomeContent(innerPadding, tasks)
+        NewTask(showBottomSheet) { title, desc ->
+            viewModel.addTask(title, desc)
+            showBottomSheet = false
+        }
     }
 }
 
 @Composable
-fun HomeContent(innerPadding: PaddingValues) {
-
-    val tasks = mutableListOf<TaskData>()
-    for (i in 0..5) {
-        tasks.add(TaskData("Tarefa " + i, "Descricao " + i, i % 2 == 0))
-    }
+fun HomeContent(innerPadding: PaddingValues, tasks: List<TaskData>) {
 
     /**
      * Aqui simplesmente temos uma Column com o nosso conteúdo.
@@ -146,9 +145,7 @@ fun HomeContent(innerPadding: PaddingValues) {
             .padding(horizontal = 4.dp)
             .padding(top = innerPadding.calculateTopPadding())
             .fillMaxSize()
-            .verticalScroll(
-                rememberScrollState()
-            ),
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Top
     ) {
         for (task in tasks) {
@@ -162,44 +159,37 @@ fun HomeContent(innerPadding: PaddingValues) {
  * Aqui podemos "cadastrar uma nova Task".
  */
 @Composable
-fun NewTask(showBottomSheet: Boolean, onComplete: () -> Unit) {
+fun NewTask(showBottomSheet: Boolean, onComplete: (String, String) -> Unit) {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
-    var taskTitle by remember {
-        mutableStateOf("")
-    }
-    var taskDescription by remember {
-        mutableStateOf("")
-    }
+    var taskTitle by remember { mutableStateOf("") }
+    var taskDescription by remember { mutableStateOf("") }
 
     if (showBottomSheet) {
         ModalBottomSheet(
-            onDismissRequest = {
-                onComplete()
-            },
+            onDismissRequest = {},
             sheetState = sheetState,
-
-            ) {
-            // Sheet content
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 OutlinedTextField(
                     value = taskTitle,
-                    onValueChange = {taskTitle = it},
-                    label = { Text(text = "Título da tarefa") })
+                    onValueChange = { taskTitle = it },
+                    label = { Text("Título da tarefa") }
+                )
                 OutlinedTextField(
                     value = taskDescription,
-                    onValueChange = {taskDescription = it},
-                    label = { Text(text = "Descrição da tarefa") })
+                    onValueChange = { taskDescription = it },
+                    label = { Text("Descrição da tarefa") }
+                )
                 Button(modifier = Modifier.padding(top = 4.dp), onClick = {
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
                         if (!sheetState.isVisible) {
-                            onComplete()
+                            onComplete(taskTitle, taskDescription)
                         }
                     }
                 }) {

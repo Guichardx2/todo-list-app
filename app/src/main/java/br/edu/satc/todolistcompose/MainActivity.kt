@@ -1,5 +1,6 @@
 package br.edu.satc.todolistcompose
 
+import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,9 +10,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModelProvider
 import br.edu.satc.todolistcompose.ui.screens.HomeScreen
 import br.edu.satc.todolistcompose.ui.theme.ToDoListComposeTheme
+import br.edu.satc.todolistcompose.viewmodel.TaskViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,7 +30,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    HomeScreen()
+                    ToDoApp()
                 }
             }
         }
@@ -32,17 +38,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
+fun ToDoApp() {
+    val context = LocalContext.current
+    val viewModel: TaskViewModel = viewModel(
+        factory = ViewModelProvider.AndroidViewModelFactory(context.applicationContext as Application)
     )
-}
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ToDoListComposeTheme {
-        Greeting("Android")
-    }
+    HomeScreen(viewModel)
 }
